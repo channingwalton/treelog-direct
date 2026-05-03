@@ -1,0 +1,22 @@
+target/
+/classes
+/.project
+/.classpath
+/bin
+/.cache
+.ensime*
+.settings
+.idea*
+pmip
+/.cache-main
+/.cache-tests
+
+# Metals
+.metals/*
+.bloop/*
+.vscode/*
+project/.bloop/*
+project/metals.sbt
+
+.bsp/*
+.mcp.json
