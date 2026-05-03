@@ -105,7 +105,7 @@ object QuadraticRoots:
   private def sqrtDeterminant(det: Double): Logged[String, Double] =
     branch("Calculating sqrt(determinant)"):
       for
-        _ <- require(
+        _ <- Logged.require(
           det >= 0,
           error = s"Negative determinant: $det",
           successLabel = s"Determinant ($det) is >= 0",

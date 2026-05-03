@@ -1,6 +1,8 @@
 ThisBuild / scalaVersion := "3.3.7"
-ThisBuild / organization  := "org.channingwalton"
-ThisBuild / version       := "0.1.0-SNAPSHOT"
+ThisBuild / organization := "org.channingwalton"
+ThisBuild / version      := "0.1.0-SNAPSHOT"
+
+Compile / scalafmtConfig := file(".scalafmt.conf")
 
 lazy val commonSettings = Seq(
   libraryDependencies ++= Seq(
@@ -26,6 +28,8 @@ lazy val cats = (project in file("cats"))
   .dependsOn(core)
   .settings(
     commonSettings,
-    name := "treelog-direct-cats",
+    name                                   := "treelog-direct-cats",
     libraryDependencies += "org.typelevel" %% "cats-core" % "2.13.0"
   )
+
+addCommandAlias("commitCheck", "clean;+test")

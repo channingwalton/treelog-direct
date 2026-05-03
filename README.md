@@ -71,7 +71,7 @@ def fourac(p: Parameters): Logged[String, Double] =
 def sqrtDeterminant(det: Double): Logged[String, Double] =
   branch("Calculating sqrt(determinant)"):
     for
-      _ <- require(
+      _ <- Logged.require(
         det >= 0,
         error = s"Negative determinant: $det",
         successLabel = s"Determinant ($det) is >= 0",
@@ -163,5 +163,5 @@ output.value
 ## Development
 
 ```bash
-sbt test
+sbt commitCheck
 ```

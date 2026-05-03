@@ -28,6 +28,11 @@ object Logged:
     val out = body
     Logged(out.result, Tree.branch(label, out.tree))
 
+  /** Creates a logged requirement check.
+    *
+    * This is intentionally available as `Logged.require` but not exported by
+    * `treelog.direct.*`, so wildcard imports do not shadow `scala.Predef.require`.
+    */
   def require[E](
     condition: Boolean,
     error: => E,
@@ -37,4 +42,4 @@ object Logged:
     if condition then success((), successLabel)
     else failure(error, failureLabel)
 
-export Logged.{branch, failure, require, success}
+export Logged.{branch, failure, success}

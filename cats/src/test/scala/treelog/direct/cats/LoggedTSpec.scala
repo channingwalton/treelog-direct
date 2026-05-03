@@ -39,3 +39,12 @@ class LoggedTSpec extends munit.CatsEffectSuite:
           |  Got one: 1
           |  Could not get two: Failed""".stripMargin
       )
+
+  test("does not evaluate later steps after failure"):
+    val output =
+      LoggedT.failure[IO, String]("No two", "Could not get two").flatMap: _ =>
+        fail("flatMap evaluated the next step after failure")
+
+    output.value.map: logged =>
+      assertEquals(logged.result, Left("No two"))
+      assertEquals(logged.tree.render, "Could not get two: Failed")

@@ -4,6 +4,12 @@ import _root_.cats.{Applicative, Functor, Monad}
 import _root_.cats.syntax.all.*
 import treelog.direct.{Logged, Tree}
 
+/** Transformer form of [[treelog.direct.Logged]].
+  *
+  * Failures represented inside `Logged` keep the partial tree. Failures raised by
+  * `F` itself short-circuit before a `Logged` value exists, so no partial tree is
+  * preserved.
+  */
 final case class LoggedT[F[_], E, A](value: F[Logged[E, A]]):
   def map[B](f: A => B)(using F: Functor[F]): LoggedT[F, E, B] =
     LoggedT(value.map(_.map(f)))
