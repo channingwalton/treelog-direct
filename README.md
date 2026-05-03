@@ -28,5 +28,5 @@ Failure is represented in both places:
 ## Development
 
 ```bash
-devtool test
+sbt test
 ```
