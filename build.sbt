@@ -1,5 +1,5 @@
 ThisBuild / scalaVersion := "3.3.7"
-ThisBuild / organization  := "com.casualmiracles"
+ThisBuild / organization  := "org.channingwalton"
 ThisBuild / version       := "0.1.0-SNAPSHOT"
 
 lazy val commonSettings = Seq(
