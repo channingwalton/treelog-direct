@@ -3,7 +3,6 @@ ThisBuild / organization  := "org.channingwalton"
 ThisBuild / version       := "0.1.0-SNAPSHOT"
 
 lazy val commonSettings = Seq(
-  scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked"),
   libraryDependencies ++= Seq(
     "org.scalameta" %% "munit"             % "1.0.4" % Test,
     "org.typelevel" %% "munit-cats-effect" % "2.2.0" % Test
