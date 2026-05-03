@@ -6,6 +6,11 @@ This project explores a smaller direct API than the original Cats transformer-ba
 
 Original project: [lancewalton/treelog](https://github.com/lancewalton/treelog)
 
+## Modules
+
+- `treelog-direct-core`: pure `Logged[E, A]` and `Tree`.
+- `treelog-direct-cats`: `LoggedT[F, E, A]` for projects already working in an effect type.
+
 ## Example
 
 ```scala
@@ -133,6 +138,24 @@ output.tree.render
 //       Got b^2 - 4ac: -55.0
 //     Calculating sqrt(determinant): Failed
 //       Determinant (-55.0) is < 0: Failed
+```
+
+## Cats
+
+```scala
+import cats.effect.IO
+import treelog.direct.cats.LoggedT
+
+val output: LoggedT[IO, String, Int] =
+  LoggedT.branch("Adding"):
+    for
+      one <- LoggedT.liftF(IO.pure(1), value => s"Got one: $value")
+      two <- LoggedT.liftF(IO.pure(2), value => s"Got two: $value")
+      sum <- LoggedT.success[IO, String, Int](one + two, value => s"Got sum: $value")
+    yield sum
+
+output.value
+// IO(Logged(Right(3), ...))
 ```
 
 ## Development

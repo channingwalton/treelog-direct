@@ -1,6 +1,6 @@
 package treelog.direct
 
-class QuadraticRootsSpec extends munit.FunSuite:
+class QuadraticRootsSpec extends munit.CatsEffectSuite:
   test("renders the success tree"):
     val output = QuadraticRoots.root(Parameters(2, 5, 3))
 
