@@ -13,7 +13,7 @@ final case class Logged[+E, +A](result: Either[E, A], tree: Tree):
 
   def flatMap[EE >: E, B](f: A => Logged[EE, B]): Logged[EE, B] =
     result match
-      case Left(error) =>
+      case Left(error)  =>
         Logged(Left(error), tree)
       case Right(value) =>
         val next = f(value)
@@ -39,8 +39,7 @@ object Logged:
 
   /** Wraps the body log under a branch.
     *
-    * Exceptions thrown while evaluating `body` are not captured. Use typed
-    * failures when the partial tree must be preserved.
+    * Exceptions thrown while evaluating `body` are not captured. Use typed failures when the partial tree must be preserved.
     */
   def branch[E, A](label: String)(body: => Logged[E, A]): Logged[E, A] =
     val out = body
@@ -48,8 +47,8 @@ object Logged:
 
   /** Creates a logged requirement check.
     *
-    * This is intentionally available as `Logged.require` but not exported by
-    * `treelog.direct.*`, so wildcard imports do not shadow `scala.Predef.require`.
+    * This is intentionally available as `Logged.require` but not exported by `treelog.direct.*`, so wildcard imports do not shadow
+    * `scala.Predef.require`.
     */
   def require[E](
     condition: Boolean,

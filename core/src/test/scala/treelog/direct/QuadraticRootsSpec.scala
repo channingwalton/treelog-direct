@@ -106,10 +106,10 @@ object QuadraticRoots:
     branch("Calculating sqrt(determinant)"):
       for
         _ <- Logged.require(
-          det >= 0,
-          error = s"Negative determinant: $det",
-          successLabel = s"Determinant ($det) is >= 0",
-          failureLabel = s"Determinant ($det) is < 0"
-        )
+               det >= 0,
+               error = s"Negative determinant: $det",
+               successLabel = s"Determinant ($det) is >= 0",
+               failureLabel = s"Determinant ($det) is < 0"
+             )
         r <- success(Math.sqrt(det), r => s"Got sqrt(determinant): $r")
       yield r

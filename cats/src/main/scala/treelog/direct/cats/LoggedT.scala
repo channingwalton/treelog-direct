@@ -7,9 +7,8 @@ import treelog.direct.{Logged, Tree}
 
 /** Transformer form of [[treelog.direct.Logged]].
   *
-  * Failures represented inside `Logged` keep the partial tree. Failures raised by
-  * `F` itself short-circuit before a `Logged` value exists, so no partial tree is
-  * preserved.
+  * Failures represented inside `Logged` keep the partial tree. Failures raised by `F` itself short-circuit before a `Logged` value exists,
+  * so no partial tree is preserved.
   */
 final case class LoggedT[F[_], E, A](value: F[Logged[E, A]]):
   def map[B](f: A => B)(using F: Functor[F]): LoggedT[F, E, B] =
@@ -18,7 +17,7 @@ final case class LoggedT[F[_], E, A](value: F[Logged[E, A]]):
   def flatMap[EE >: E, B](f: A => LoggedT[F, EE, B])(using F: Monad[F]): LoggedT[F, EE, B] =
     LoggedT:
       value.flatMap:
-        case Logged(Left(error), tree) =>
+        case Logged(Left(error), tree)   =>
           Logged(Left(error), tree).pure[F]
         case Logged(Right(result), tree) =>
           f(result).value.map(next => Logged(next.result, Tree.combine(tree, next.tree)))
@@ -42,9 +41,9 @@ object LoggedT:
       LoggedT:
         Monad[F].tailRecM((a, Tree.empty)) { case (current, tree) =>
           f(current).value.map {
-            case Logged(Left(error), nextTree) =>
+            case Logged(Left(error), nextTree)         =>
               Right(Logged(Left(error), Tree.combine(tree, nextTree)))
-            case Logged(Right(Left(next)), nextTree) =>
+            case Logged(Right(Left(next)), nextTree)   =>
               Left((next, Tree.combine(tree, nextTree)))
             case Logged(Right(Right(value)), nextTree) =>
               Right(Logged(Right(value), Tree.combine(tree, nextTree)))

@@ -1,6 +1,7 @@
 ThisBuild / scalaVersion := "3.3.7"
 ThisBuild / organization := "org.channingwalton"
 ThisBuild / version      := "0.1.0-SNAPSHOT"
+ThisBuild / scalafmtOnCompile := true
 
 lazy val commonSettings = Seq(
   libraryDependencies ++= Seq(

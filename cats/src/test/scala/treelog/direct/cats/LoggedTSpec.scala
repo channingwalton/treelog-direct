@@ -66,8 +66,10 @@ class LoggedTSpec extends munit.CatsEffectSuite:
 
   test("does not evaluate later steps after failure"):
     val output =
-      LoggedT.failure[IO, String]("No two", "Could not get two").flatMap: _ =>
-        fail("flatMap evaluated the next step after failure")
+      LoggedT
+        .failure[IO, String]("No two", "Could not get two")
+        .flatMap: _ =>
+          fail("flatMap evaluated the next step after failure")
 
     output.value.map: logged =>
       assertEquals(logged.result, Left("No two"))
@@ -75,12 +77,15 @@ class LoggedTSpec extends munit.CatsEffectSuite:
 
   test("maps the outer effect"):
     val output =
-      LoggedT.success[IO, String, Int](1, "Got one").mapK(
-        new FunctionK[IO, Future]:
-          def apply[A](fa: IO[A]): Future[A] =
-            fa.unsafeToFuture()
-      )
+      LoggedT
+        .success[IO, String, Int](1, "Got one")
+        .mapK(
+          new FunctionK[IO, Future]:
+            def apply[A](fa: IO[A]): Future[A] =
+              fa.unsafeToFuture()
+        )
 
-    IO.fromFuture(IO(output.value)).map: logged =>
-      assertEquals(logged.result, Right(1))
-      assertEquals(logged.tree.render, "Got one")
+    IO.fromFuture(IO(output.value))
+      .map: logged =>
+        assertEquals(logged.result, Right(1))
+        assertEquals(logged.tree.render, "Got one")
