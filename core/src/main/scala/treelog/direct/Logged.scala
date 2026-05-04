@@ -6,6 +6,11 @@ final case class Logged[+E, +A](result: Either[E, A], tree: Tree):
       case Right(value) => Logged(Right(f(value)), tree)
       case Left(error)  => Logged(Left(error), tree)
 
+  def leftMap[EE](f: E => EE): Logged[EE, A] =
+    result match
+      case Right(value) => Logged(Right(value), tree)
+      case Left(error)  => Logged(Left(f(error)), tree)
+
   def flatMap[EE >: E, B](f: A => Logged[EE, B]): Logged[EE, B] =
     result match
       case Left(error) =>
@@ -15,6 +20,14 @@ final case class Logged[+E, +A](result: Either[E, A], tree: Tree):
         Logged(next.result, Tree.combine(tree, next.tree))
 
 object Logged:
+  def pure[E, A](value: A): Logged[E, A] =
+    Logged(Right(value), Tree.empty)
+
+  def fromEither[E, A](value: Either[E, A], label: String): Logged[E, A] =
+    value match
+      case Right(successValue) => success(successValue, label)
+      case Left(error)         => failure(error, label)
+
   def success[A](value: A, label: String): Logged[Nothing, A] =
     Logged(Right(value), Tree.leaf(label, success = true))
 
@@ -24,6 +37,11 @@ object Logged:
   def failure[E](error: E, label: String): Logged[E, Nothing] =
     Logged(Left(error), Tree.leaf(label, success = false))
 
+  /** Wraps the body log under a branch.
+    *
+    * Exceptions thrown while evaluating `body` are not captured. Use typed
+    * failures when the partial tree must be preserved.
+    */
   def branch[E, A](label: String)(body: => Logged[E, A]): Logged[E, A] =
     val out = body
     Logged(out.result, Tree.branch(label, out.tree))

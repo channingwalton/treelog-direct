@@ -2,8 +2,6 @@ ThisBuild / scalaVersion := "3.3.7"
 ThisBuild / organization := "org.channingwalton"
 ThisBuild / version      := "0.1.0-SNAPSHOT"
 
-Compile / scalafmtConfig := file(".scalafmt.conf")
-
 lazy val commonSettings = Seq(
   libraryDependencies ++= Seq(
     "org.scalameta" %% "munit"             % "1.0.4" % Test,
@@ -32,4 +30,4 @@ lazy val cats = (project in file("cats"))
     libraryDependencies += "org.typelevel" %% "cats-core" % "2.13.0"
   )
 
-addCommandAlias("commitCheck", "clean;+test")
+addCommandAlias("commitCheck", "clean;test")

@@ -39,3 +39,21 @@ class TreeSpec extends munit.FunSuite:
       Tree.combine(Tree.leaf("one"), Tree.leaf("two"))
 
     assertEquals(tree.render, "one\ntwo")
+
+  test("skips empty branches"):
+    val tree =
+      Tree.combine(
+        Tree.leaf("one"),
+        Tree.branch("Empty", Tree.empty)
+      )
+
+    assertEquals(tree.render, "one")
+    assertEquals(tree.isSuccess, true)
+
+  test("renders deep trees without overflowing the stack"):
+    val tree =
+      (1 to 10000).foldLeft(Tree.leaf("leaf")): (child, depth) =>
+        Tree.branch(s"branch $depth", child)
+
+    assertEquals(tree.isSuccess, true)
+    assert(tree.render.startsWith("branch 10000\n  branch 9999"))

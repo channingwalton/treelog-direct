@@ -2,6 +2,7 @@ package treelog.direct.cats
 
 import _root_.cats.{Applicative, Functor, Monad}
 import _root_.cats.syntax.all.*
+import _root_.cats.arrow.FunctionK
 import treelog.direct.{Logged, Tree}
 
 /** Transformer form of [[treelog.direct.Logged]].
@@ -22,11 +23,41 @@ final case class LoggedT[F[_], E, A](value: F[Logged[E, A]]):
         case Logged(Right(result), tree) =>
           f(result).value.map(next => Logged(next.result, Tree.combine(tree, next.tree)))
 
+  def mapK[G[_]](f: FunctionK[F, G]): LoggedT[G, E, A] =
+    LoggedT(f(value))
+
 object LoggedT:
+  given loggedTFunctor[F[_]: Functor, E]: Functor[[A] =>> LoggedT[F, E, A]] with
+    def map[A, B](fa: LoggedT[F, E, A])(f: A => B): LoggedT[F, E, B] =
+      fa.map(f)
+
+  given loggedTMonad[F[_]: Monad, E]: Monad[[A] =>> LoggedT[F, E, A]] with
+    def pure[A](value: A): LoggedT[F, E, A] =
+      LoggedT.pure(value)
+
+    def flatMap[A, B](fa: LoggedT[F, E, A])(f: A => LoggedT[F, E, B]): LoggedT[F, E, B] =
+      fa.flatMap(f)
+
+    def tailRecM[A, B](a: A)(f: A => LoggedT[F, E, Either[A, B]]): LoggedT[F, E, B] =
+      LoggedT:
+        Monad[F].tailRecM((a, Tree.empty)) { case (current, tree) =>
+          f(current).value.map {
+            case Logged(Left(error), nextTree) =>
+              Right(Logged(Left(error), Tree.combine(tree, nextTree)))
+            case Logged(Right(Left(next)), nextTree) =>
+              Left((next, Tree.combine(tree, nextTree)))
+            case Logged(Right(Right(value)), nextTree) =>
+              Right(Logged(Right(value), Tree.combine(tree, nextTree)))
+          }
+        }
+
+  def pure[F[_]: Applicative, E, A](value: A): LoggedT[F, E, A] =
+    fromLogged(Logged.pure(value))
+
   def fromLogged[F[_]: Applicative, E, A](logged: Logged[E, A]): LoggedT[F, E, A] =
     LoggedT(logged.pure[F])
 
-  def liftF[F[_]: Functor, A](value: F[A], label: A => String): LoggedT[F, Nothing, A] =
+  def liftF[F[_]: Functor, E, A](value: F[A], label: A => String): LoggedT[F, E, A] =
     LoggedT(value.map(a => Logged.success(a, label(a))))
 
   def success[F[_]: Applicative, E, A](value: A, label: String): LoggedT[F, E, A] =
