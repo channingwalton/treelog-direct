@@ -27,6 +27,73 @@ class LoggedTSpec extends munit.CatsEffectSuite:
       assertEquals(logged.result, Right(1))
       assertEquals(logged.tree.render, "Got one: 1")
 
+  test("lifts unlogged effects"):
+    val output: LoggedT[IO, String, Int] =
+      LoggedT.liftF_(IO.pure(1))
+
+    output.value.map: logged =>
+      assertEquals(logged.result, Right(1))
+      assertEquals(logged.tree.render, "")
+
+  test("constructs logged values from either"):
+    val success =
+      LoggedT.fromEither[IO, String, Int](Right(1), value => s"Got one: $value", error => s"Could not get one: $error")
+    val failure =
+      LoggedT.fromEither[IO, String, Int](Left("No one"), value => s"Got one: $value", error => s"Could not get one: $error")
+
+    success.value.flatMap: successLogged =>
+      failure.value.map: failureLogged =>
+        assertEquals(successLogged.result, Right(1))
+        assertEquals(successLogged.tree.render, "Got one: 1")
+        assertEquals(failureLogged.result, Left("No one"))
+        assertEquals(failureLogged.tree.render, "Could not get one: No one: Failed")
+
+  test("constructs logged values from effectful either"):
+    val success =
+      LoggedT.fromEitherF[IO, String, Int](IO.pure(Right(1)), value => s"Got one: $value", error => s"Could not get one: $error")
+    val failure =
+      LoggedT.fromEitherF[IO, String, Int](IO.pure(Left("No one")), value => s"Got one: $value", error => s"Could not get one: $error")
+
+    success.value.flatMap: successLogged =>
+      failure.value.map: failureLogged =>
+        assertEquals(successLogged.result, Right(1))
+        assertEquals(successLogged.tree.render, "Got one: 1")
+        assertEquals(failureLogged.result, Left("No one"))
+        assertEquals(failureLogged.tree.render, "Could not get one: No one: Failed")
+
+  test("maps logged failure errors"):
+    val output =
+      LoggedT
+        .failure[IO, String]("No two", "Could not get two")
+        .leftMap(_.length)
+
+    output.value.map: logged =>
+      assertEquals(logged.result, Left(6))
+      assertEquals(logged.tree.render, "Could not get two: Failed")
+
+  test("captures attempted effects as logged values"):
+    val success =
+      LoggedT.attemptF[IO, String, Int](
+        IO.pure(1),
+        throwable => s"Effect failed: ${throwable.getMessage}",
+        value => s"Got value: $value",
+        error => error
+      )
+    val failure =
+      LoggedT.attemptF[IO, String, Int](
+        IO.raiseError(new RuntimeException("boom")),
+        throwable => s"Effect failed: ${throwable.getMessage}",
+        value => s"Got value: $value",
+        error => error
+      )
+
+    success.value.flatMap: successLogged =>
+      failure.value.map: failureLogged =>
+        assertEquals(successLogged.result, Right(1))
+        assertEquals(successLogged.tree.render, "Got value: 1")
+        assertEquals(failureLogged.result, Left("Effect failed: boom"))
+        assertEquals(failureLogged.tree.render, "Effect failed: boom: Failed")
+
   test("combines effectful steps in a for-comprehension"):
     val output =
       LoggedT.branch("Adding"):

@@ -1,6 +1,6 @@
 package treelog.direct.cats
 
-import _root_.cats.{Applicative, Functor, Monad}
+import _root_.cats.{Applicative, Functor, Monad, MonadThrow}
 import _root_.cats.syntax.all.*
 import _root_.cats.arrow.FunctionK
 import treelog.direct.{Logged, Tree}
@@ -13,6 +13,9 @@ import treelog.direct.{Logged, Tree}
 final case class LoggedT[F[_], E, A](value: F[Logged[E, A]]):
   def map[B](f: A => B)(using F: Functor[F]): LoggedT[F, E, B] =
     LoggedT(value.map(_.map(f)))
+
+  def leftMap[EE](f: E => EE)(using F: Functor[F]): LoggedT[F, EE, A] =
+    LoggedT(value.map(_.leftMap(f)))
 
   def flatMap[EE >: E, B](f: A => LoggedT[F, EE, B])(using F: Monad[F]): LoggedT[F, EE, B] =
     LoggedT:
@@ -56,8 +59,45 @@ object LoggedT:
   def fromLogged[F[_]: Applicative, E, A](logged: Logged[E, A]): LoggedT[F, E, A] =
     LoggedT(logged.pure[F])
 
+  def fromEither[F[_]: Applicative, E, A](
+    value: Either[E, A],
+    successLabel: A => String,
+    failureLabel: E => String
+  ): LoggedT[F, E, A] =
+    fromLogged:
+      value match
+        case Right(successValue) => Logged.success(successValue, successLabel(successValue))
+        case Left(error)         => Logged.failure(error, failureLabel(error))
+
+  def fromEitherF[F[_]: Functor, E, A](
+    value: F[Either[E, A]],
+    successLabel: A => String,
+    failureLabel: E => String
+  ): LoggedT[F, E, A] =
+    LoggedT:
+      value.map:
+        case Right(successValue) => Logged.success(successValue, successLabel(successValue))
+        case Left(error)         => Logged.failure(error, failureLabel(error))
+
   def liftF[F[_]: Functor, E, A](value: F[A], label: A => String): LoggedT[F, E, A] =
     LoggedT(value.map(a => Logged.success(a, label(a))))
+
+  def liftF_[F[_]: Functor, E, A](value: F[A]): LoggedT[F, E, A] =
+    LoggedT(value.map(Logged.pure(_)))
+
+  def attemptF[F[_]: MonadThrow, E, A](
+    value: F[A],
+    onThrowable: Throwable => E,
+    successLabel: A => String,
+    failureLabel: E => String
+  ): LoggedT[F, E, A] =
+    LoggedT:
+      value.attempt.map:
+        case Right(successValue) =>
+          Logged.success(successValue, successLabel(successValue))
+        case Left(throwable)     =>
+          val error = onThrowable(throwable)
+          Logged.failure(error, failureLabel(error))
 
   def success[F[_]: Applicative, E, A](value: A, label: String): LoggedT[F, E, A] =
     fromLogged(Logged.success(value, label))
