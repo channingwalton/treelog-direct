@@ -105,7 +105,12 @@ object LoggedT:
   def success[F[_]: Applicative, E, A](value: A, label: A => String): LoggedT[F, E, A] =
     success(value, label(value))
 
+  // Keep the original two-type-argument form source-compatible while allowing
+  // callers to select the invariant success type explicitly or by expected type.
   def failure[F[_]: Applicative, E](error: E, label: String): LoggedT[F, E, Nothing] =
+    failure[F, E, Nothing](error, label)
+
+  def failure[F[_]: Applicative, E, A](error: E, label: String)(using scala.DummyImplicit): LoggedT[F, E, A] =
     fromLogged(Logged.failure(error, label))
 
   def require[F[_]: Applicative, E](

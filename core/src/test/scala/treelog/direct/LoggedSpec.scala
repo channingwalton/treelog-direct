@@ -16,6 +16,13 @@ class LoggedSpec extends munit.FunSuite:
     assertEquals(failure.result, Left("No one"))
     assertEquals(failure.tree.render, "Could not get one: Failed")
 
+  test("rejects inconsistent result and tree states"):
+    val _ = intercept[IllegalArgumentException]:
+      Logged[String, Int](Left("boom"), Tree.empty)
+
+    val _ = intercept[IllegalArgumentException]:
+      Logged[String, Int](Right(1), Tree.leaf("failed", success = false))
+
   test("maps failures"):
     val output =
       Logged.failure("No two", "Could not get two").leftMap(_.length)

@@ -71,6 +71,19 @@ class LoggedTSpec extends munit.CatsEffectSuite:
       assertEquals(logged.result, Left(6))
       assertEquals(logged.tree.render, "Could not get two: Failed")
 
+  test("constructs failures at a requested success type"):
+    val explicit: LoggedT[IO, String, Int] =
+      LoggedT.failure[IO, String, Int]("No two", "Could not get two")
+    val inferred: LoggedT[IO, String, Int] =
+      LoggedT.failure("No two", "Could not get two")
+
+    for
+      explicitLogged <- explicit.value
+      inferredLogged <- inferred.value
+    yield List(explicitLogged, inferredLogged).foreach: logged =>
+      assertEquals(logged.result, Left("No two"))
+      assertEquals(logged.tree.render, "Could not get two: Failed")
+
   test("captures attempted effects as logged values"):
     val success =
       LoggedT.attemptF[IO, String, Int](

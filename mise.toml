@@ -1,0 +1,7 @@
+[tasks.default]
+description = "List available tasks"
+run = "mise tasks ls"
+
+[tasks.commit-check]
+description = "Compile, lint, and test"
+run = "sbt commitCheck"

@@ -40,6 +40,29 @@ class TreeSpec extends munit.FunSuite:
 
     assertEquals(tree.render, "one\ntwo")
 
+  test("indents every line of multiline labels"):
+    val tree =
+      Tree.branch("parent", Tree.leaf("first\nsecond", success = false))
+
+    assertEquals(
+      tree.render,
+      """parent: Failed
+        |  first
+        |  second: Failed""".stripMargin
+    )
+
+  test("normalizes and indents multiline branch labels"):
+    val tree =
+      Tree.branch("parent\r\ncontext", Tree.leaf("first\u2028second", success = false))
+
+    assertEquals(
+      tree.render,
+      """parent
+        |context: Failed
+        |  first
+        |  second: Failed""".stripMargin
+    )
+
   test("skips empty branches"):
     val tree =
       Tree.combine(
@@ -57,3 +80,47 @@ class TreeSpec extends munit.FunSuite:
 
     assertEquals(tree.isSuccess, true)
     assert(tree.render.startsWith("branch 10000\n  branch 9999"))
+
+  test("preserves structural equality and descriptions"):
+    val leaf = Tree.leaf("leaf")
+
+    assertEquals(leaf, Tree.leaf("leaf"))
+    assertNotEquals(leaf, Tree.leaf("other"))
+    assertNotEquals(leaf, Tree.leaf("leaf", success = false))
+    assertNotEquals(Tree.branch("one", leaf), Tree.branch("two", leaf))
+    assertNotEquals(Tree.branch("one", leaf), Tree.combine(Tree.leaf("one"), leaf))
+    assertEquals(Tree.empty.toString, "Empty")
+    assertEquals(Tree.branch("parent", leaf).toString, "Branch(parent,Vector(Leaf(leaf,true)))")
+    assertEquals(
+      Tree.combine(Tree.branch("parent", leaf), Tree.leaf("other", success = false)).toString,
+      "Group(Vector(Branch(parent,Vector(Leaf(leaf,true))),Leaf(other,false)))"
+    )
+
+    val runtimeLeaf: Any = leaf
+    assert(runtimeLeaf.isInstanceOf[Product])
+    assert(runtimeLeaf.isInstanceOf[java.io.Serializable])
+    assertEquals(leaf.productElementNames.toList, List("label", "success"))
+    assertEquals(leaf.productIterator.toList, List("leaf", true))
+
+  test("handles null labels consistently"):
+    val left  = Tree.leaf(null)
+    val right = Tree.leaf(null)
+
+    assertEquals(left, right)
+    assertEquals(left.hashCode, right.hashCode)
+    assertEquals(left.render, "null")
+    assertEquals(left.toString, "Leaf(null,true)")
+
+  test("compares, hashes, and describes deep trees without overflowing the stack"):
+    def deepTree(leaf: String): Tree =
+      (1 to 10000).foldLeft(Tree.leaf(leaf)): (child, depth) =>
+        Tree.branch(s"branch $depth", child)
+
+    val left      = deepTree("leaf")
+    val right     = deepTree("leaf")
+    val different = deepTree("other")
+
+    assertEquals(left, right)
+    assertNotEquals(left, different)
+    assertEquals(left.hashCode, right.hashCode)
+    assert(left.toString.startsWith("Branch(branch 10000,Vector("))

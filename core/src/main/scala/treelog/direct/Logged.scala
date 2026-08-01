@@ -1,6 +1,11 @@
 package treelog.direct
 
 final case class Logged[+E, +A](result: Either[E, A], tree: Tree):
+  scala.Predef.require(
+    result.isRight == tree.isSuccess,
+    "Logged result and tree success must agree"
+  )
+
   def map[B](f: A => B): Logged[E, B] =
     result match
       case Right(value) => Logged(Right(f(value)), tree)
