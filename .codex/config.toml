@@ -1,0 +1,2 @@
+[mcp_servers.metals]
+url = "http://localhost:63567/mcp"
