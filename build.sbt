@@ -1,4 +1,4 @@
-ThisBuild / scalaVersion      := "3.3.8"
+ThisBuild / scalaVersion      := "3.9.0"
 ThisBuild / organization      := "org.channingwalton"
 ThisBuild / version           := "0.1.0-SNAPSHOT"
 ThisBuild / scalafmtOnCompile := true
