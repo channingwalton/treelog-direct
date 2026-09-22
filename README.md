@@ -2,7 +2,7 @@
 
 [![Scala CI](https://github.com/channingwalton/treelog-direct/actions/workflows/scala.yml/badge.svg)](https://github.com/channingwalton/treelog-direct/actions/workflows/scala.yml)
 
-Experimental Scala 3.3 rewrite of [lancewalton/treelog](https://github.com/lancewalton/treelog)'s core idea: computations return both a result and a hierarchical log tree.
+Experimental Scala 3 rewrite of [lancewalton/treelog](https://github.com/lancewalton/treelog)'s core idea: computations return both a result and a hierarchical log tree.
 
 This project explores a smaller direct API than the original Cats transformer-based implementation. It is not source or binary compatible with the original library.
 

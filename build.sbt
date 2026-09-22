@@ -1,4 +1,4 @@
-ThisBuild / scalaVersion      := "3.3.8"
+ThisBuild / scalaVersion      := "3.9.0"
 ThisBuild / organization      := "org.channingwalton"
 ThisBuild / version           := "0.1.0-SNAPSHOT"
 ThisBuild / scalafmtOnCompile := true
@@ -6,7 +6,7 @@ ThisBuild / scalafmtOnCompile := true
 lazy val commonSettings = Seq(
   libraryDependencies ++= Seq(
     "org.scalameta" %% "munit"             % "1.3.6" % Test,
-    "org.typelevel" %% "munit-cats-effect" % "2.2.0" % Test
+    "org.typelevel" %% "munit-cats-effect" % "2.2.1" % Test
   )
 )
 
