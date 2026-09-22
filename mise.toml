@@ -1,6 +1,6 @@
 [tasks.default]
 description = "List available tasks"
-run = "mise tasks ls"
+run = "mise commit-check"
 
 [tasks.commit-check]
 description = "Compile, lint, and test"
