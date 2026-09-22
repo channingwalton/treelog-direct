@@ -6,7 +6,7 @@ ThisBuild / scalafmtOnCompile := true
 lazy val commonSettings = Seq(
   libraryDependencies ++= Seq(
     "org.scalameta" %% "munit"             % "1.3.4" % Test,
-    "org.typelevel" %% "munit-cats-effect" % "2.2.0" % Test
+    "org.typelevel" %% "munit-cats-effect" % "2.2.1" % Test
   )
 )
 
