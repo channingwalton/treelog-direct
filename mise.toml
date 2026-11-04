@@ -1,5 +1,5 @@
 [tasks.default]
-description = "List available tasks"
+description = "Run commit-check"
 run = "mise commit-check"
 
 [tasks.commit-check]
