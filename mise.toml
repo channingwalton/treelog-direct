@@ -5,3 +5,7 @@ run = "mise commit-check"
 [tasks.commit-check]
 description = "Compile, lint, and test"
 run = "sbt commitCheck"
+
+[tasks.updates]
+description = "Show updates"
+run = "sbt dependencyUpdates"
