@@ -142,7 +142,7 @@ output.tree.render
 
 ## Public tree traversal
 
-Use `Tree.fold[A]` to build reports, custom renderers, or integration data without parsing `render` or accessing private node types:
+Use `tree.fold[A]` to build reports, custom renderers, or integration data without parsing `render` or accessing private node types:
 
 ```scala
 val failedLeaves = output.tree.fold[Int](
@@ -157,7 +157,7 @@ val failedLeaves = output.tree.fold[Int](
 - `empty` is a by-name result, evaluated only for an empty tree.
 - `leaf` receives `(label, success)`.
 - `branch` receives `(label, success, children: Vector[A])`.
-- `group` receives `(success, children: Vector[A])` for anonymous siblings created by `Tree.combine`.
+- `group` receives `(success, children: Vector[A])` for anonymous siblings created by `Tree.combine`. It runs at most once, and only when the root is a group.
 
 Handlers run once per node in depth-first, left-to-right post-order: children are folded before their parent, and child results retain their original order. Branch and group success flags describe the original subtree, independently of the folded results. Labels are passed unchanged, including nulls and line separators.
 

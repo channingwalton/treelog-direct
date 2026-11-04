@@ -27,6 +27,8 @@ sealed trait Tree extends Product with Serializable:
     * Handlers run once per node in left-to-right post-order. Branches and anonymous groups receive their folded children in their original
     * order, along with their aggregate success flag. Labels are passed unchanged, including nulls and line separators.
     *
+    * The `group` handler runs at most once, and only when the root is an anonymous group.
+    *
     * `empty` is evaluated only for an empty tree. Construction removes empty children and flattens anonymous groups; the fold observes that
     * normalized structure, not the history of construction. Exceptions from handlers propagate to the caller and stop traversal. Stack
     * safety does not extend to recursion performed by a handler.
@@ -135,10 +137,10 @@ object Tree:
 
   private def fold[A](
     tree: Tree,
-    empty: => A,
-    leaf: (String, Boolean) => A,
-    branch: (String, Boolean, Vector[A]) => A,
-    group: (Boolean, Vector[A]) => A
+    onEmpty: => A,
+    onLeaf: (String, Boolean) => A,
+    onBranch: (String, Boolean, Vector[A]) => A,
+    onGroup: (Boolean, Vector[A]) => A
   ): A =
     val todo = mutable.ArrayDeque[FoldFrame](FoldFrame.Visit(tree))
     val done = mutable.ArrayBuffer.empty[A]
@@ -155,9 +157,9 @@ object Tree:
     while todo.nonEmpty do
       todo.removeLast() match
         case FoldFrame.Visit(_: EmptyTree) =>
-          done += empty
+          done += onEmpty
         case FoldFrame.Visit(node: Leaf)   =>
-          done += leaf(node.label, node.successful)
+          done += onLeaf(node.label, node.successful)
         case FoldFrame.Visit(node: Branch) =>
           todo += FoldFrame.BuildBranch(node)
           node.children.reverseIterator.foreach(child => todo += FoldFrame.Visit(child))
@@ -166,10 +168,10 @@ object Tree:
           node.children.reverseIterator.foreach(child => todo += FoldFrame.Visit(child))
         case FoldFrame.BuildBranch(node)   =>
           val children = childResults(node.children.size)
-          done += branch(node.label, node.successful, children)
+          done += onBranch(node.label, node.successful, children)
         case FoldFrame.BuildGroup(node)    =>
           val children = childResults(node.children.size)
-          done += group(node.successful, children)
+          done += onGroup(node.successful, children)
 
     done.head
 
