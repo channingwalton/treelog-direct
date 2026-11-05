@@ -124,3 +124,131 @@ class TreeSpec extends munit.FunSuite:
     assertNotEquals(left, different)
     assertEquals(left.hashCode, right.hashCode)
     assert(left.toString.startsWith("Branch(branch 10000,Vector("))
+
+  test("folds into a structured report in left-to-right post-order"):
+    enum Report:
+      case Empty
+      case Leaf(label: String, success: Boolean)
+      case Branch(label: String, success: Boolean, children: Vector[Report])
+      case Group(success: Boolean, children: Vector[Report])
+
+    val tree   = Tree.combine(
+      Tree.branch(
+        "parent\r\ncontext",
+        Tree.combine(
+          Tree.leaf("one"),
+          Tree.branch("nested", Tree.leaf(null, success = false))
+        )
+      ),
+      Tree.leaf("tail")
+    )
+    val visits = Vector.newBuilder[String]
+    val report = tree.fold[Report](
+      empty = fail("a non-empty tree must not evaluate the empty handler"),
+      leaf = (label, success) =>
+        visits += s"leaf:$label"
+        Report.Leaf(label, success)
+      ,
+      branch = (label, success, children) =>
+        visits += s"branch:$label"
+        Report.Branch(label, success, children)
+      ,
+      group = (success, children) =>
+        visits += "group"
+        Report.Group(success, children)
+    )
+
+    assertEquals(
+      report,
+      Report.Group(
+        false,
+        Vector(
+          Report.Branch(
+            "parent\r\ncontext",
+            false,
+            Vector(
+              Report.Leaf("one", true),
+              Report.Branch("nested", false, Vector(Report.Leaf(null, false)))
+            )
+          ),
+          Report.Leaf("tail", true)
+        )
+      )
+    )
+    assertEquals(
+      visits.result(),
+      Vector("leaf:one", "leaf:null", "branch:nested", "branch:parent\r\ncontext", "leaf:tail", "group")
+    )
+
+  test("folds a normalized empty tree once without invoking other handlers"):
+    var evaluations = 0
+    val result      = Tree
+      .branch("removed", Tree.combine(Tree.empty, Tree.empty))
+      .fold[Int](
+        empty = {
+          evaluations += 1
+          42
+        },
+        leaf = (_, _) => fail("unexpected leaf"),
+        branch = (_, _, _) => fail("unexpected branch"),
+        group = (_, _) => fail("unexpected group")
+      )
+
+    assertEquals(result, 42)
+    assertEquals(evaluations, 1)
+
+  test("folds deep trees without overflowing the stack"):
+    val tree =
+      (1 to 100000).foldLeft(Tree.leaf("leaf")): (child, _) =>
+        Tree.branch("branch", child)
+
+    val nodes = tree.fold[Int](
+      empty = fail("unexpected empty tree"),
+      leaf = (_, success) =>
+        assert(success)
+        1
+      ,
+      branch = (_, success, children) =>
+        assert(success)
+        children.head + 1
+      ,
+      group = (_, _) => fail("unexpected group")
+    )
+
+    assertEquals(nodes, 100001)
+
+  test("folds wide normalized groups with ordered child results"):
+    val tree =
+      (1 to 10000).foldLeft(Tree.empty): (children, index) =>
+        Tree.combine(children, Tree.combine(Tree.empty, Tree.leaf(index.toString)))
+
+    val total = tree.fold[Int](
+      empty = fail("unexpected empty tree"),
+      leaf = (label, _) => label.toInt,
+      branch = (_, _, _) => fail("unexpected branch"),
+      group = (success, children) =>
+        assert(success)
+        assertEquals(children, (1 to 10000).toVector)
+        children.sum
+    )
+
+    assertEquals(total, 50005000)
+
+  test("propagates handler exceptions and stops before later siblings"):
+    val problem = new IllegalStateException("report failed")
+    val visits  = Vector.newBuilder[String]
+    val tree    = Tree.combine(Tree.branch("parent", Tree.leaf("first")), Tree.leaf("later"))
+
+    val thrown = intercept[IllegalStateException]:
+      tree.fold[Int](
+        empty = fail("unexpected empty tree"),
+        leaf = (label, _) =>
+          visits += label
+          1
+        ,
+        branch = (_, _, _) => throw problem,
+        group = (_, _) => fail("unexpected group")
+      )
+
+    assert(thrown eq problem)
+    assertEquals(visits.result(), Vector("first"))

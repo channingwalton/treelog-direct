@@ -1,6 +1,7 @@
 package treelog.direct
 
 import scala.annotation.tailrec
+import scala.collection.mutable
 import scala.util.hashing.MurmurHash3
 
 sealed trait Tree extends Product with Serializable:
@@ -20,6 +21,25 @@ sealed trait Tree extends Product with Serializable:
 
   final override def toString: String =
     Tree.describe(this)
+
+  /** Folds this tree bottom-up without using the call stack for traversal.
+    *
+    * Handlers run once per node in left-to-right post-order. Branches and anonymous groups receive their folded children in their original
+    * order, along with their aggregate success flag. Labels are passed unchanged, including nulls and line separators.
+    *
+    * The `group` handler runs at most once, and only when the root is an anonymous group.
+    *
+    * `empty` is evaluated only for an empty tree. Construction removes empty children and flattens anonymous groups; the fold observes that
+    * normalized structure, not the history of construction. Exceptions from handlers propagate to the caller and stop traversal. Stack
+    * safety does not extend to recursion performed by a handler.
+    */
+  final def fold[A](
+    empty: => A,
+    leaf: (String, Boolean) => A,
+    branch: (String, Boolean, Vector[A]) => A,
+    group: (Boolean, Vector[A]) => A
+  ): A =
+    Tree.fold(this, empty, leaf, branch, group)
 
 object Tree:
   final private class EmptyTree extends Tree:
@@ -109,6 +129,51 @@ object Tree:
         new Group(l +: right.children, l.successful && right.successful)
       case (l, r)                      =>
         new Group(Vector(l, r), l.successful && r.successful)
+
+  private enum FoldFrame:
+    case Visit(tree: Tree)
+    case BuildBranch(node: Branch)
+    case BuildGroup(node: Group)
+
+  private def fold[A](
+    tree: Tree,
+    onEmpty: => A,
+    onLeaf: (String, Boolean) => A,
+    onBranch: (String, Boolean, Vector[A]) => A,
+    onGroup: (Boolean, Vector[A]) => A
+  ): A =
+    val todo = mutable.ArrayDeque[FoldFrame](FoldFrame.Visit(tree))
+    val done = mutable.ArrayBuffer.empty[A]
+
+    def childResults(count: Int): Vector[A] =
+      val children = Vector.newBuilder[A]
+      var index    = done.size - count
+      while index < done.size do
+        children += done(index)
+        index += 1
+      val _        = done.dropRightInPlace(count)
+      children.result()
+
+    while todo.nonEmpty do
+      todo.removeLast() match
+        case FoldFrame.Visit(_: EmptyTree) =>
+          done += onEmpty
+        case FoldFrame.Visit(node: Leaf)   =>
+          done += onLeaf(node.label, node.successful)
+        case FoldFrame.Visit(node: Branch) =>
+          todo += FoldFrame.BuildBranch(node)
+          node.children.reverseIterator.foreach(child => todo += FoldFrame.Visit(child))
+        case FoldFrame.Visit(node: Group)  =>
+          todo += FoldFrame.BuildGroup(node)
+          node.children.reverseIterator.foreach(child => todo += FoldFrame.Visit(child))
+        case FoldFrame.BuildBranch(node)   =>
+          val children = childResults(node.children.size)
+          done += onBranch(node.label, node.successful, children)
+        case FoldFrame.BuildGroup(node)    =>
+          val children = childResults(node.children.size)
+          done += onGroup(node.successful, children)
+
+    done.head
 
   private def render(tree: Tree): String =
     renderState(tree).lines.mkString("\n")

@@ -140,6 +140,31 @@ output.tree.render
 //       Determinant (-55.0) is < 0: Failed
 ```
 
+## Public tree traversal
+
+Use `tree.fold[A]` to build reports, custom renderers, or integration data without parsing `render` or accessing private node types:
+
+```scala
+val failedLeaves = output.tree.fold[Int](
+  empty = 0,
+  leaf = (_, success) => if success then 0 else 1,
+  branch = (_, _, children) => children.sum,
+  group = (_, children) => children.sum
+)
+// 1 for the failure example above
+```
+
+- `empty` is a by-name result, evaluated only for an empty tree.
+- `leaf` receives `(label, success)`.
+- `branch` receives `(label, success, children: Vector[A])`.
+- `group` receives `(success, children: Vector[A])` for anonymous siblings created by `Tree.combine`. It runs at most once, and only when the root is a group.
+
+Handlers run once per node in depth-first, left-to-right post-order: children are folded before their parent, and child results retain their original order. Branch and group success flags describe the original subtree, independently of the folded results. Labels are passed unchanged, including nulls and line separators.
+
+The fold observes the normalized tree: empty children are removed, empty branches disappear, combined groups are flattened, and wrapping a group in a branch makes its members the branch's direct children.
+
+Traversal is stack-safe for deeply nested trees and takes linear time in the number of nodes, excluding handler work. Handlers remain responsible for their own recursion. Handler exceptions propagate immediately and stop traversal before later nodes are visited.
+
 ## Cats
 
 ```scala
